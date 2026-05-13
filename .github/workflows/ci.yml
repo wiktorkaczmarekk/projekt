@@ -10,6 +10,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Ta sekcja uruchamia bazę PostgreSQL specjalnie dla testów
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: django_user
+          POSTGRES_PASSWORD: django_password
+        ports:
+          - 5432:5432
+        # To sprawdza, czy baza jest w 100% gotowa do pracy
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
 
@@ -24,8 +41,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    # Dodajemy zmienne środowiskowe, żeby Django wiedziało, jak się połączyć z bazą
     - name: Run Migrations
+      env:
+        POSTGRES_DB: test_db
+        POSTGRES_USER: django_user
+        POSTGRES_PASSWORD: django_password
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
       run: python manage.py migrate
 
     - name: Run Tests
+      env:
+        POSTGRES_DB: test_db
+        POSTGRES_USER: django_user
+        POSTGRES_PASSWORD: django_password
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
       run: python manage.py test
